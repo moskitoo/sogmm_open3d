@@ -32,6 +32,9 @@ namespace sogmm
       using Device = o3d::core::Device;
       using Dtype = o3d::core::Dtype;
 
+      Tensor fusion_counts_;
+      Tensor observation_counts_;
+      Tensor last_displacements_;
       Tensor weights_;
       Tensor means_;
       Tensor covariances_;
@@ -72,6 +75,9 @@ namespace sogmm
         this->covariances_ = that.covariances_;
         this->covariances_cholesky_ = that.covariances_cholesky_;
         this->precisions_cholesky_ = that.precisions_cholesky_;
+        this->fusion_counts_ = that.fusion_counts_;
+        this->observation_counts_ = that.observation_counts_;
+        this->last_displacements_ = that.last_displacements_;
       }
 
       /// @brief Initialization with known number of components.
@@ -93,6 +99,9 @@ namespace sogmm
         covariances_ = Tensor::Zeros({1, n_components, D, D}, dtype_, device_);
         covariances_cholesky_ = Tensor::Zeros({1, n_components, D, D}, dtype_, device_);
         precisions_cholesky_ = Tensor::Zeros({1, n_components, D, D}, dtype_, device_);
+        fusion_counts_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
+        observation_counts_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
+        last_displacements_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
       }
 
       /// @brief Initialization with known SOGMM parameters.
@@ -119,6 +128,9 @@ namespace sogmm
         covariances_ = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
         covariances_cholesky_ = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
         precisions_cholesky_ = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
+        fusion_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        observation_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        last_displacements_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
 
         weights_ = weights;
         means_ = means;
@@ -173,6 +185,9 @@ namespace sogmm
             TensorToEigenMatrix<T>(covariances_cholesky_.Reshape({n_components_, C}));
         sogmm.precisions_cholesky_ =
             TensorToEigenMatrix<T>(precisions_cholesky_.Reshape({n_components_, C}));
+        sogmm.fusion_counts_ = TensorToEigenMatrix<T>(fusion_counts_.Reshape({n_components_, 1}));
+        sogmm.observation_counts_ = TensorToEigenMatrix<T>(observation_counts_.Reshape({n_components_, 1}));
+        sogmm.last_displacements_ = TensorToEigenMatrix<T>(last_displacements_.Reshape({n_components_, 1}));
       }
 
       /// @brief Fill the SOGMM data from host.
@@ -190,6 +205,9 @@ namespace sogmm
         covariances_ = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
         covariances_cholesky_ = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
         precisions_cholesky_ = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
+        fusion_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        observation_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        last_displacements_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
 
         weights_ = EigenMatrixToTensor(from.weights_, device_)
                        .Reshape(weights_.GetShape());
@@ -201,6 +219,12 @@ namespace sogmm
                                     .Reshape(covariances_.GetShape());
         precisions_cholesky_ = EigenMatrixToTensor(from.precisions_cholesky_, device_)
                                    .Reshape(covariances_.GetShape());
+        fusion_counts_ = EigenMatrixToTensor(from.fusion_counts_, device_)
+                            .Reshape(fusion_counts_.GetShape());
+        observation_counts_ = EigenMatrixToTensor(from.observation_counts_, device_)
+                                 .Reshape(observation_counts_.GetShape());
+        last_displacements_ = EigenMatrixToTensor(from.last_displacements_, device_)
+                                 .Reshape(last_displacements_.GetShape());
       }
 
       /// @brief Merge the input GMM into this GMM.
@@ -217,6 +241,9 @@ namespace sogmm
         Tensor new_covariances = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
         Tensor new_covariances_cholesky = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
         Tensor new_precisions_cholesky = Tensor::Zeros({1, n_components_, D, D}, dtype_, device_);
+        Tensor new_fusion_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        Tensor new_observation_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        Tensor new_last_displacements_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
 
         new_weights = S1.Append(S2, 1);
         new_weights.Div_(support_size_ + that.support_size_);
@@ -226,12 +253,18 @@ namespace sogmm
         new_covariances = covariances_.Append(that.covariances_, 1);
         new_covariances_cholesky = covariances_cholesky_.Append(that.covariances_cholesky_, 1);
         new_precisions_cholesky = precisions_cholesky_.Append(that.precisions_cholesky_, 1);
+        new_fusion_counts_ = fusion_counts_.Append(that.fusion_counts_, 1);
+        new_observation_counts_ = observation_counts_.Append(that.observation_counts_, 1);
+        new_last_displacements_ = last_displacements_.Append(that.last_displacements_, 1);
 
         weights_ = new_weights;
         means_ = new_means;
         covariances_ = new_covariances;
         precisions_cholesky_ = new_precisions_cholesky;
         covariances_cholesky_ = new_covariances_cholesky;
+        fusion_counts_ = new_fusion_counts_;
+        observation_counts_ = new_observation_counts_;
+        last_displacements_ = new_last_displacements_;
 
         support_size_ += that.support_size_;
       }
@@ -246,6 +279,10 @@ namespace sogmm
 
       sogmm3.means_ = input.means_.Slice(2, 0, 3);
       sogmm3.covariances_[0] = input.covariances_[0].AsStrided({input.n_components_, 3, 3}, {16, 4, 1});
+
+      sogmm3.fusion_counts_ = input.fusion_counts_;
+      sogmm3.observation_counts_ = input.observation_counts_;
+      sogmm3.last_displacements_ = input.last_displacements_;
 
       sogmm3.updateCholesky(sogmm3.covariances_);
 

@@ -32,6 +32,12 @@ namespace sogmm
                          "Number of components in this GMM.")
           .def_readwrite("support_size_", &Container::support_size_,
                          "Number of points in the support of this GMM.")
+          .def_readwrite("fusion_counts_", &Container::fusion_counts_,
+                         "Fusion counts for each Gaussian component.")
+          .def_readwrite("observation_counts_", &Container::observation_counts_,
+                         "Observation counts for each Gaussian component.")
+          .def_readwrite("last_displacements_", &Container::last_displacements_,
+                         "Last displacements for each Gaussian component.")
           .def("merge", &Container::merge,
                "Merge another container into this container.")
           .def("to_host", &Container::toHost,
