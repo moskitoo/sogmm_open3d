@@ -26,25 +26,45 @@ void binding_generator(py::module& m, std::string& typestr)
       .def_readwrite("max_iter_", &GMMClass::max_iter_)
       .def_readwrite("support_size_", &GMMClass::support_size_)
       .def_property("weights_", 
-          [](GMMClass& g) -> typename GMMClass::Vector& { return g.weights_; },
-          [](GMMClass& g, const typename GMMClass::Vector& v) { g.weights_ = v; },
-          py::return_value_policy::reference_internal)
+          [](GMMClass& g) -> typename GMMClass::Vector { 
+              return g.weights_;  // Return by value (copy)
+          },
+          [](GMMClass& g, const typename GMMClass::Vector& v) { 
+              g.weights_ = v; 
+              g.updateDeviceAndHostExternal();  // Sync to GPU
+          })
       .def_property("means_", 
-          [](GMMClass& g) -> typename GMMClass::MatrixXD& { return g.means_; },
-          [](GMMClass& g, const typename GMMClass::MatrixXD& m) { g.means_ = m; },
-          py::return_value_policy::reference_internal)
+          [](GMMClass& g) -> typename GMMClass::MatrixXD { 
+              return g.means_;  // Return by value (copy)
+          },
+          [](GMMClass& g, const typename GMMClass::MatrixXD& m) { 
+              g.means_ = m; 
+              g.updateDeviceAndHostExternal();  // Sync to GPU
+          })
       .def_property("covariances_", 
-          [](GMMClass& g) -> typename GMMClass::MatrixXC& { return g.covariances_; },
-          [](GMMClass& g, const typename GMMClass::MatrixXC& c) { g.covariances_ = c; },
-          py::return_value_policy::reference_internal)
+          [](GMMClass& g) -> typename GMMClass::MatrixXC { 
+              return g.covariances_;  // Return by value (copy)
+          },
+          [](GMMClass& g, const typename GMMClass::MatrixXC& c) { 
+              g.covariances_ = c; 
+              g.updateDeviceAndHostExternal();  // Sync to GPU
+          })
       .def_property("covariances_cholesky_", 
-          [](GMMClass& g) -> typename GMMClass::MatrixXC& { return g.covariances_cholesky_; },
-          [](GMMClass& g, const typename GMMClass::MatrixXC& c) { g.covariances_cholesky_ = c; },
-          py::return_value_policy::reference_internal)
+          [](GMMClass& g) -> typename GMMClass::MatrixXC { 
+              return g.covariances_cholesky_;  // Return by value (copy)
+          },
+          [](GMMClass& g, const typename GMMClass::MatrixXC& c) { 
+              g.covariances_cholesky_ = c; 
+              g.updateDeviceAndHostExternal();  // Sync to GPU
+          })
       .def_property("precisions_cholesky_", 
-          [](GMMClass& g) -> typename GMMClass::MatrixXC& { return g.precisions_cholesky_; },
-          [](GMMClass& g, const typename GMMClass::MatrixXC& p) { g.precisions_cholesky_ = p; },
-          py::return_value_policy::reference_internal)
+          [](GMMClass& g) -> typename GMMClass::MatrixXC { 
+              return g.precisions_cholesky_;  // Return by value (copy)
+          },
+          [](GMMClass& g, const typename GMMClass::MatrixXC& p) { 
+              g.precisions_cholesky_ = p; 
+              g.updateDeviceAndHostExternal();  // Sync to GPU
+          })
       .def("update_device_and_host_external",
            &GMMClass::updateDeviceAndHostExternal)
       .def("sample", &GMMClass::sample)
