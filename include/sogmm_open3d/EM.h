@@ -34,11 +34,11 @@ namespace sogmm
       using Device = typename Container::Device;
       using Dtype = typename Container::Dtype;
 
-      EM()
+      EM(T tol = 1e-3, T reg_covar = 1e-6, unsigned int max_iter = 100)
       {
-        tol_ = 1e-3;
-        reg_covar_ = 1e-6;
-        max_iter_ = 100;
+        tol_ = tol;
+        reg_covar_ = reg_covar;
+        max_iter_ = max_iter_;
 
         device_ = Device("CUDA:0");
         dtype_ = Dtype::template FromType<T>();
