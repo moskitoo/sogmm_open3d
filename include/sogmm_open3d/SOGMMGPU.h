@@ -35,6 +35,8 @@ namespace sogmm
       Tensor fusion_counts_;
       Tensor observation_counts_;
       Tensor last_displacements_;
+      Tensor uncertainty_;
+      Tensor freeze_;
       Tensor weights_;
       Tensor means_;
       Tensor covariances_;
@@ -78,6 +80,8 @@ namespace sogmm
         this->fusion_counts_ = that.fusion_counts_;
         this->observation_counts_ = that.observation_counts_;
         this->last_displacements_ = that.last_displacements_;
+        this->uncertainty_ = that.uncertainty_;
+        this->freeze_ = that.freeze_;
       }
 
       /// @brief Initialization with known number of components.
@@ -102,6 +106,8 @@ namespace sogmm
         fusion_counts_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
         observation_counts_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
         last_displacements_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
+        uncertainty_ = Tensor::Ones({1, n_components, 1}, dtype_, device_);
+        freeze_ = Tensor::Zeros({1, n_components, 1}, dtype_, device_);
       }
 
       /// @brief Initialization with known SOGMM parameters.
@@ -131,6 +137,8 @@ namespace sogmm
         fusion_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
         observation_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
         last_displacements_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        uncertainty_ = Tensor::Ones({1, n_components_, 1}, dtype_, device_);
+        freeze_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
 
         weights_ = weights;
         means_ = means;
@@ -188,6 +196,8 @@ namespace sogmm
         sogmm.fusion_counts_ = TensorToEigenMatrix<T>(fusion_counts_.Reshape({n_components_, 1}));
         sogmm.observation_counts_ = TensorToEigenMatrix<T>(observation_counts_.Reshape({n_components_, 1}));
         sogmm.last_displacements_ = TensorToEigenMatrix<T>(last_displacements_.Reshape({n_components_, 1}));
+        sogmm.uncertainty_ = TensorToEigenMatrix<T>(uncertainty_.Reshape({n_components_, 1}));
+        sogmm.freeze_ = TensorToEigenMatrix<T>(freeze_.Reshape({n_components_, 1}));
       }
 
       /// @brief Fill the SOGMM data from host.
@@ -208,6 +218,8 @@ namespace sogmm
         fusion_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
         observation_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
         last_displacements_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        uncertainty_ = Tensor::Ones({1, n_components_, 1}, dtype_, device_);
+        freeze_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
 
         weights_ = EigenMatrixToTensor(from.weights_, device_)
                        .Reshape(weights_.GetShape());
@@ -225,6 +237,10 @@ namespace sogmm
                                  .Reshape(observation_counts_.GetShape());
         last_displacements_ = EigenMatrixToTensor(from.last_displacements_, device_)
                                  .Reshape(last_displacements_.GetShape());
+        uncertainty_ = EigenMatrixToTensor(from.uncertainty_, device_)
+                                 .Reshape(uncertainty_.GetShape());
+        freeze_ = EigenMatrixToTensor(from.freeze_, device_)
+                                 .Reshape(freeze_.GetShape());
       }
 
       /// @brief Merge the input GMM into this GMM.
@@ -244,6 +260,8 @@ namespace sogmm
         Tensor new_fusion_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
         Tensor new_observation_counts_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
         Tensor new_last_displacements_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
+        Tensor new_uncertainty_ = Tensor::Ones({1, n_components_, 1}, dtype_, device_);
+        Tensor new_freeze_ = Tensor::Zeros({1, n_components_, 1}, dtype_, device_);
 
         new_weights = S1.Append(S2, 1);
         new_weights.Div_(support_size_ + that.support_size_);
@@ -256,6 +274,8 @@ namespace sogmm
         new_fusion_counts_ = fusion_counts_.Append(that.fusion_counts_, 1);
         new_observation_counts_ = observation_counts_.Append(that.observation_counts_, 1);
         new_last_displacements_ = last_displacements_.Append(that.last_displacements_, 1);
+        new_uncertainty_ = uncertainty_.Append(that.uncertainty_, 1);
+        new_freeze_ = freeze_.Append(that.freeze_, 1);
 
         weights_ = new_weights;
         means_ = new_means;
@@ -265,6 +285,8 @@ namespace sogmm
         fusion_counts_ = new_fusion_counts_;
         observation_counts_ = new_observation_counts_;
         last_displacements_ = new_last_displacements_;
+        uncertainty_ = new_uncertainty_;
+        freeze_ = new_freeze_;
 
         support_size_ += that.support_size_;
       }
@@ -283,6 +305,8 @@ namespace sogmm
       sogmm3.fusion_counts_ = input.fusion_counts_;
       sogmm3.observation_counts_ = input.observation_counts_;
       sogmm3.last_displacements_ = input.last_displacements_;
+      sogmm3.uncertainty_ = input.uncertainty_;
+      sogmm3.freeze_ = input.freeze_;
 
       sogmm3.updateCholesky(sogmm3.covariances_);
 

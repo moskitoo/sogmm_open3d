@@ -38,6 +38,10 @@ namespace sogmm
                          "Observation counts for each Gaussian component.")
           .def_readwrite("last_displacements_", &Container::last_displacements_,
                          "Last displacements for each Gaussian component.")
+          .def_readwrite("uncertainty_", &Container::uncertainty_,
+                         "Uncertainty for each Gaussian component. [0,1]")
+          .def_readwrite("freeze_", &Container::freeze_,
+                         "Freeze status for each Gaussian component.")
           .def("merge", &Container::merge,
                "Merge another container into this container.")
           .def("to_host", &Container::toHost,
